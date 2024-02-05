@@ -75,12 +75,95 @@
     In the end, I installed ArduinoBLE from the library manager and upload ble_arduino.ino
     which is from <a href="https://fastrobotscornell.github.io/FastRobots/labs/ble_robot-1.1.zip">here</a>
     The MAC address is now printed.Here is an image</p>
-    <img src="macaddress.png" alt="macaddress">
-
-
-
-
-
+    <img src="assets/img/macaddress.png" alt="macaddress">
+    <h4>2.2 Codebase</h4>
+    <p>After I downloaded and copy the directory into my project directory, I activated my virtual environment and start the jupyter server. I read through the codebase and I understand the
+    demo.ipynb mainly handle various BLE operations. It can write in some data and also receive the data from the Artemis board.</p>
+    <h3>3. Lab Tasks</h3>
+    <h4>3.1 Configurations</h4>
+    <p>First, I replace the artemis_address value with the MAC address in connections.yaml. Then, I change the BLEService UUID by generating a new UUID and replacing the BLEService UUID in ble_arduino with it. In the end,
+    I ran all the cells in demo.ipynb to use and test BLE.</p>
+    <h4>3.2 Tasks</h4>
+    <h5>3.2.1 ECHO</h5>
+    <p>In the "case ECHO" of ble_arduino.ino, I wrote the appended string into "tx_estring_value" and it will then write to the characteristic which is called "tx_characteristic_string".
+    The computer first send ECHO command and then receive the string from RX_STRING. Here are the result and the code I wrote in arduino and jupyter lab.</p>
+    <div class="center-video">
+    <img src="assets/img/lab2_1_1.png" alt="lab2-1">
+    </div>
+    <div class="center-video">
+    <img src="assets/img/lab2_1_2.png" alt="lab2-2">
+    </div>
+    <div class="center-video">
+    <img src="assets/img/lab2_1_3.png" alt="lab2-3">
+    </div>
+    <h5>3.2.2 GET_TIME_MILLIS</h5>
+    <p>In order to add a new command, I need to first add the command in "enum CommandTypes" of ble_arduino.ino. Then, I need to add it in cmd_types.py and restart the kernel.
+    The code is quite similar to the previous one. The only thing I need to change is to use "millis()" to get the number of milliseconds since the program starts. I also used "(float)" to
+    avoid overflow and get a more accurate number when it needs further process. Here are the result and the code I wrote in arduino and jupyter lab.</p>
+    <div class="center-video">
+    <img src="assets/img/lab2_2_1.png" alt="lab2-4">
+    </div>
+    <div class="center-video">
+    <img src="assets/img/lab2_2_2.png" alt="lab2-5">
+    </div>
+    <div class="center-video">
+    <img src="assets/img/lab2_2_3.png" alt="lab2-6">
+    </div>
+    <h5>3.2.3 Notification Handler</h5>
+    <p>I use the "start_notify()" in the class ArtemisBLEController to set up a notification handler. Once the computer send the GET_TIME_MILLIS command, the Artemis board will
+    return the string value. Then, I print the data I received out. Here is the result and python code.</p>
+    <div class="center-video">
+    <img src="assets/img/lab2_3_1.png" alt="lab2-7">
+    </div>
+    <h5>3.2.4 use Loop to get current time</h5>
+    <p>First, I put the code of GET_TIME_MILLIS into a for loop. In jupyter lab, I start notify and then send the command. Then, it will sleep 1 second and stop notify. Here is the result and the code of jupyter lab and Arduino.</p>
+    <div class="center-video">
+    <img src="assets/img/lab2_4_1.png" alt="lab2-8">
+    </div>
+    <div class="center-video">
+    <img src="assets/img/lab2_4_2.png" alt="lab2-9">
+    </div>
+    <p>Each message contains "T:" and a float number, so each message has 6 bytes. The interval between each message is about 3 milliseconds. Therefore, the data transfer rate is 2 byte/millisecond= 16Kbps</p>
+    <h5>3.2.5 Store and Send 1</h5>
+    <p>First, I add a new command which is called SEND_TIME_DATA. I also create an array and it uses "millis()" to get the time via a loop. Then, the Artemis board send each data points with another loop.
+    In jupyter lab, I create a list in python which is called "data_points1" to store the received data. Here are the result and the code I wrote in arduino and jupyter lab.</p>
+    <div class="center-video">
+    <img src="assets/img/lab2_5_1.png" alt="lab2-10">
+    </div>
+    <div class="center-video">
+    <img src="assets/img/lab2_5_2.png" alt="lab2-11">
+    </div>
+    <h5>3.2.6 Store and Send 2</h5>
+    <p>Using similar way. I add a new command GET_TEMP_READINGS and use another array to store the value produced by "getTempDegF()". Then, the Atemis board send the data and I use another list to store the data points.
+    Here are the result and the code I wrote in arduino and jupyter lab.</p>
+    <div class="center-video">
+    <img src="assets/img/lab2_6_1.png" alt="lab2-12">
+    </div>
+    <div class="center-video">
+    <img src="assets/img/lab2_6_2.png" alt="lab2-13">
+    </div>
+    <h5>3.2.7 Difference between two methods</h5>
+    <p>The first method read and send the data at same time while the second method first read the data into array and then send each data points. The advantage of the first method is that it is a synchronized way to get the data but the data transfer
+    rate is slow due to bottleneck of sending data. The second method is a asynchronized method but the data transfer rate is about 1.4Mbps which is much faster than the first method. If the data is 6 byte, the 384 kB Artemis board can store 64000 pieces
+    of data.</p>
+    <h4>3.3 Additional tasks for 5000-level students</h4>
+    <h5>1. Effective Data Rate And Overhead</h5>
+    <p>In order to test the effective data rate, I reuse the ECHO commandand let it send back the input data from the computer. In the beginning, I send and receive 5-byte data and then add 5 more byte to send and receive each times.
+    Finally, I send and receive 120 bytes. Then, I calculate the bps each times and here is a plot made by python.</p>
+    <div class="center-video">
+    <img src="assets/img/lab2_7_1.png" alt="lab2-14">
+    </div>
+    <p>It can be observed that the short packets introduce some overhead as the effective data rate is low. Although, the performance of large packets are not stable, but they do help to
+    reduce overhead. The code in python is shown below.</p>
+    <div class="center-video">
+    <img src="assets/img/lab2_7_2.png" alt="lab2-15">
+    </div>
+    <h5>2. Reliability</h5>
+    <p>When I send the data at a high rate from the Artemis board to my computer, I labeled each data points and found a few packages are missing. Therefore, the computer did not
+    read all the data published from the Artemis board.</p>
+    <h3>4. Discussion</h3>
+    <p>In this part, I learned how to write code in python and arduino language to implement some functions. The main challenge is to understand the difference between two
+    data sending ways. I also understand the overhead of different packet sizes.</p>
     <a href="index.html">Back to the main page</a>
 </body>
 </html>
