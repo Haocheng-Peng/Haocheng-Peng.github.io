@@ -25,7 +25,7 @@
     <p>First, I connect the IMU to the Artemis board and install the SparkFun 9 DOF IMU
     Breakout. Here is a picture of the connection.</p>
     <div class="center-video">
-    <img src="lab3_1.png" alt="lab2/3-1">
+    <img src="lab3_1.jpg" alt="lab2/3-1">
     </div>
     <h4>2.1.2 IMU example</h4>
     <p>After running the example, It returns the IMU data. It can be seen in the
@@ -58,9 +58,79 @@
     <p>According to the data from the above part, The measured pitch range is [-90.82, 91.51] and the measured roll range is [-92.02, 93.26]. The
     conversion factor is </p>
     <p>\( Pitch Conversion Factor = \frac{90-(-90)}{91.51-(-90.82)} = 0.98 \) </p>
-    
-
-
+    <p>\( Roll Conversion Factor = \frac{90-(-90)}{93.26-(-92.02)} = 0.97 \) </p>
+    <p>The final pitch and roll degree can be calculated by the equation:</p>
+    <p>\( Final pitch output = -90 + Conversion Factor (measured output- (-90.82))\)</p>
+    <p>\( Final roll output = -90 + Conversion Factor (measured output- (-92.02))\)</p>
+    <h4>2.2.3 Noise in the frequency spectrum analysis</h4>
+    <p>After I record the data and load the data in python, I first plot the pitch and roll angle in time domain with sample rate equals to 240 Hz.
+    The first picture is the pitch angle in time domain and the second one is the roll angle in time domain.</p>
+    <div class="center-video">
+    <img src="lab3_3.png" alt="lab2/3-3">
+    </div>
+    <div class="center-video">
+    <img src="lab3_4.png" alt="lab2/3-4">
+    </div>
+    <p>After fourier transform, the pitch and roll angle in frequency spectrum is:</p>
+    <div class="center-video">
+    <img src="lab3_5.png" alt="lab2/3-5">
+    </div>
+    <div class="center-video">
+    <img src="lab3_6.png" alt="lab2/3-6">
+    </div>
+    <p>In the datasheet, it shows that the IMU already has a low pass filter so it has little noise in frequency spectrum.
+    The cut off frequency I select is 20 Hz. With the equations:</p>
+    <p>\( a=\frac{T}{T+RC} \)</p>
+    <p>\( fc=\frac{1}{2RC\pi} \)</p>
+    <p>\( T=\frac{1}{f} \)</p>
+    <p>Here fc is the cut off frequency and f is the sample rate, and the a is equal to 0.347.
+    However, the low pass filter can not change the result too much. Here is the code:</p>
+    <div class="center-video">
+    <img src="lab3_7.png" alt="lab2/3-7">
+    </div>
+    <h3>2.3 Gyroscope</h3>
+    <h4>2.3.1 Pitch, roll and yaw calculated by gyroscope</h4>
+    <p>Use the code below, I change the IMU positions and it returns different pitch,
+    row and yaw.</p>
+    <div class="center-video">
+    <img src="lab3_8.png" alt="lab2/3-8">
+    </div>
+    <div class="center-video">
+    <img src="lab3_9.png" alt="lab2/3-9">
+    </div>
+    <p>Compared to the data in accelerometer, the gyroscope data
+    increases rapidly as time goes on. Besides, the sample rate need to be
+    high, as low sample rate will cause the updated data become slower.</p>
+    <h4>2.3.2 Complementary filter</h4>
+    <p>Use the equation learned in the class, the code of complementary filter
+    is shown below.</p>
+    <div class="center-video">
+    <img src="lab3_10.png" alt="lab2/3-10">
+    </div>
+    <p>Then, I tilt and roll the IMU to different degrees. The video shows that the result is quite accurate</p>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/hwfONzv-6EQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <h3>2.4 Sample Data</h3>
+    <h4>2.4.1 Speed of sampling</h4>
+    <p>Using the equations in the class, the program returns pitch, roll and yaw. I delete all delay and serial print.
+    The sample rate is about 64 Hz. That is because the data rate of magnetometer is much more smaller than others.
+    Moreover, the main loop on the Artemis board runs faster than the IMU process new values as it's execution time is only about 3ms </p>
+    <h4>2.4.2 Stored IMU data and time stamp in arrays</h4>
+    <p>In arduino, I write a new method which can calculate pitch,roll,yaw and timestamp in float numbers. The data is stored in arrays. It is used in a new case which is called
+    "GET_5s_IMU". Then, each pieces of data is sent in a for loop. The code is shown below.</p>
+    <div class="center-video">
+    <img src="lab3_11.png" alt="lab2/3-11">
+    </div>
+    <h4>2.4.3 5s of IMU data sent over Bluetooth</h4>
+    <p>As the Artemis board has 384kB of RAM and each piece of data is 8 bytes (4 float numbers:pitch,roll,yaw,timestamp), it can store 48000 pieces of data.
+    The timestamp shows the interval of each piece of data is about 4ms. Therefore, in order to get 5s IMU data, the Artemis board need to store and send 1250 datapoints.
+    Here is part of the result in jupyter lab.</p>
+    <div class="center-video">
+    <img src="lab3_12.png" alt="lab2/3-12">
+    </div>
+    <h3>2.5 Record a Stunt</h3>
+    <p>Waiting for the batteries...</p>
 
 
 
