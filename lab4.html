@@ -15,8 +15,81 @@
     </style>
 
 </head>
-<p>The first thing I focus is the PWM pins used on the Artemis board. I choose pins 2,5,11,12 as they are available for this task and won't affect
-other functions.</p>
+    <h1>Lab 4: Motors and Open Loop Control</h1>
+    <h2>1. Prelab</h2>
+    <h3>1.1 Diagram of connections</h3>
 
+
+
+    <p>The first thing I focus is the PWM pins used on the Artemis board. I choose pins 2,5,11,12 as they are available for this task and won't affect
+        other functions. They connect to two input pins on each motor drivers. On the other hand, the 4 output pins need to connect the motor's input and output. Therefore, the input pins and output pins need to be soldered together.
+      The battery need to connect to motor drivers' VIN and GND, so I use two wires to connect to the positive pole and another two to connect to the negative pole.
+      The other end of these wires connect to two motor drivers' VIN and GND. Besides, the two GND pins on the motor driver need to connect two GND pins on the Artemis board.
+    Here is the diagram which shows the connection in detail.</p>
+    <div class="center-video">
+           <img src="assets/img/lab4_1.jpg" alt="lab4_1">
+    </div>
+    <h3>1.2 Battery discussion</h3>
+    <p>The reason of powering Artemis board and the motor drivers from different batteries is that
+    they have different voltage requirement and this can avoid some interference produced by motors.
+    </p>
+
+    <h2>2. Lab Tasks</h2>
+    <h3>2.1 Setup with power supply and oscilloscope hookup</h3>
+    <p>I first keep the motor driver powered  and use PWM signal to control the power
+    on the output of motor driver. Here is a picture of oscilloscope. The voltage is actually not that stable</p>
+    <div class="center-video">
+           <img src="assets/img/lab4_2.jpg" alt="lab4_2">
+    </div>
+    <h3>2.2 Power supply and analogWrite code for testing motor drivers</h3>
+    <p>I use the 3.7V, 850mAh battery and find it enough to power both motors. Here is the code
+    of analogWrite which can let the car to move straight</p>
+    <div class="center-video">
+           <img src="assets/img/lab4_3.png" alt="lab4_3">
+    </div>
+    <h3>2.3 Video of both wheels spinning</h3>
+    <p>Set the PWM value to 130, both wheels are spinning in a high speed.</p>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <h3>2.4 Picture of all the components secured in the car</h3>
+    <p>In the beginning, I tried to put all components in their designed place but one of my motor driver was broken so
+    I have to redo all the things. Due to my poor soldering skills, it will lead to short circuit sometimes
+    if keep everything tight together. Therefore, I use capacitor tape to fix everything. two motor drivers and a battery are below the
+        Artemis board and other things can be observed in the picture below.Here is the picture</p>
+    <div class="center-video">
+           <img src="assets/img/lab4_4.jpg" alt="lab4_4">
+    </div>
+    <h3>2.5 Lower limit PWM value discussion</h3>
+    <p>I tested several PWM values and find out 44 is the lowest value that can let the robot beats static friction and moves forward.
+    Here is the code and the video I record.</p>
+    <div class="center-video">
+           <img src="assets/img/lab4_5.png" alt="lab4_5">
+    </div>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/shorts/P3YFPB6XLp8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <h3>2.6 Calibration demonstration</h3>
+    <p>In order to let the robot move straight, I set a calibration factor which is equal to 1.2 and use it
+    to time the PWM value on one side. I also modify my move function so the wheels can spin forward and backward.
+    Here is the code and the video. It shows that the robot can follow a straight line for at least 2 meters.</p>
+    <div class="center-video">
+           <img src="assets/img/lab4_6.png" alt="lab4_6">
+    </div>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/btlVeePzrIg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <h3>2.7 Open loop code and video</h3>
+    <p>In the open loo[ control stunt, I let the robot to move straight for 1 second. Then, it will turn left and turn right. In the end,
+    It spins 3 second. There is a 5 second interval between each action. Here is the code and video.</p>
+    <div class="center-video">
+           <img src="assets/img/lab4_7.png" alt="lab4_7">
+    </div>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/shorts/UQ2eeLFDjOw" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <h3>(5000) 2.8 analogWrite frequency discussion</h3>
+
+    <a href="index.html">Back to the main page</a>
 </body>
 </html>
