@@ -50,7 +50,7 @@
     <h3>2.3 Video of both wheels spinning</h3>
     <p>Set the PWM value to 130, both wheels are spinning in a high speed.</p>
     <div class="center-video">
-    <iframe width="600" height="330" src="https://www.youtube.com/embed/" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/GpXo3yY3aXk" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
     <h3>2.4 Picture of all the components secured in the car</h3>
     <p>In the beginning, I tried to put all components in their designed place but one of my motor driver was broken so
@@ -61,7 +61,7 @@
            <img src="assets/img/lab4_4.jpg" alt="lab4_4">
     </div>
     <h3>2.5 Lower limit PWM value discussion</h3>
-    <p>I tested several PWM values and find out 44 is the lowest value that can let the robot beats static friction and moves forward.
+    <p>I tested several PWM values and find out 52 is the lowest value that can let the robot beats static friction and moves forward.
     Here is the code and the video I record.</p>
     <div class="center-video">
            <img src="assets/img/lab4_5.png" alt="lab4_5">
@@ -88,8 +88,16 @@
     <div class="center-video">
     <iframe width="600" height="330" src="https://www.youtube.com/embed/UQ2eeLFDjOw" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
-    <h3>(5000) 2.8 analogWrite frequency discussion</h3>
-
+    <h3>(5000) 2.8 AnalogWrite frequency discussion</h3>
+    <p>In 2.1, the picture shows the frequency of PWM on the top right corner which is 202.42Hz.
+    It is faster than ToF sensor so it is adequate for motors to take action based on the environment changes.
+    If we generate faster PWM signal, it can react more quickly in some extreme situations.</p>
+    <h3>(5000) 2.9 Lowest PWM value speed discussion</h3>
+    <p>One motor's lowest PWM value to overcome the dynamic friction and keep it running is 40. The other
+    one has a higher value which is 50. Therefore, the lowest PWM value to keep it running is 50. Here is a video.</p>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/xvMShXMx4Lg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
     <a href="index.html">Back to the main page</a>
 </body>
 </html>
