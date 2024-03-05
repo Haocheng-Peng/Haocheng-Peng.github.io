@@ -37,7 +37,9 @@
     <h2>2. Lab Tasks</h2>
     <h3>2.1 Setup with power supply and oscilloscope hookup</h3>
     <p>I first keep the motor driver powered  and use PWM signal to control the power
-    on the output of motor driver. Here is a picture of oscilloscope. The voltage is actually not that stable</p>
+    on the output of motor driver. Here is a picture of oscilloscope. The voltage is actually not that stable
+    due to some noise. Besides, I also believe that my motor driver may have some problems but I can not fix it
+    after several tests.</p>
     <div class="center-video">
            <img src="assets/img/lab4_2.jpg" alt="lab4_2">
     </div>
@@ -56,7 +58,7 @@
     <p>In the beginning, I tried to put all components in their designed place but one of my motor driver was broken so
     I have to redo all the things. Due to my poor soldering skills, it will lead to short circuit sometimes
     if keep everything tight together. Therefore, I use capacitor tape to fix everything. two motor drivers and a battery are below the
-        Artemis board and other things can be observed in the picture below.Here is the picture</p>
+        Artemis board and other things can be observed in the picture below. Here is the picture</p>
     <div class="center-video">
            <img src="assets/img/lab4_4.jpg" alt="lab4_4">
     </div>
@@ -72,7 +74,7 @@
     <h3>2.6 Calibration demonstration</h3>
     <p>In order to let the robot move straight, I set a calibration factor which is equal to 1.2 and use it
     to time the PWM value on one side. I also modify my move function so the wheels can spin forward and backward.
-    Here is the code and the video. It shows that the robot can follow a straight line for at least 2 meters.</p>
+    Here is the code and the video. It shows that the robot can follow a straight line for about 2 meters.</p>
     <div class="center-video">
            <img src="assets/img/lab4_6.png" alt="lab4_6">
     </div>
@@ -80,8 +82,9 @@
     <iframe width="600" height="330" src="https://www.youtube.com/embed/btlVeePzrIg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
     <h3>2.7 Open loop code and video</h3>
-    <p>In the open loo[ control stunt, I let the robot to move straight for 1 second. Then, it will turn left and turn right. In the end,
-    It spins 3 second. There is a 5 second interval between each action. Here is the code and video.</p>
+    <p>In the open loop control stunt, I let the robot to move straight for 1 second. Then, it will turn left and turn right. In the end,
+    It spins 3 second. There is a 5 second interval between each action. Here is the code and video. The calibration factor need
+    to be fine tuned in the future and the performance of motor can be affected by the battery level.</p>
     <div class="center-video">
            <img src="assets/img/lab4_7.png" alt="lab4_7">
     </div>
@@ -92,6 +95,9 @@
     <p>In 2.1, the picture shows the frequency of PWM on the top right corner which is 202.42Hz.
     It is faster than ToF sensor so it is adequate for motors to take action based on the environment changes.
     If we generate faster PWM signal, it can react more quickly in some extreme situations.</p>
+    <div class="center-video">
+           <img src="assets/img/lab4_2.jpg" alt="lab4_2">
+    </div>
     <h3>(5000) 2.9 Lowest PWM value speed discussion</h3>
     <p>One motor's lowest PWM value to overcome the dynamic friction and keep it running is 40. The other
     one has a higher value which is 50. Therefore, the lowest PWM value to keep it running is 50. Here is a video.</p>
