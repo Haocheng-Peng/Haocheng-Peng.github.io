@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <title>lab5</title>
+     <style>
+        .center-video {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div style="width: 50%; margin: auto; text-align: center;">
+    <h1>Lab 5: Linear PID control and Linear interpolation</h1>
+    <h2>1. Objective</h2>
+    <p>The main purpose of this lab is to implement PID controller with suitable values.
+    I will also explore extrapolation and some tips and tricks while using PID controller.</p>
+    <h2>2. Prelab</h2>
+      <p>In order to get the debugging data after executing PID controller and all other data, I need to integrate
+      the code from previous labs and create a function which implements PID controller. Here is the code of a basic
+      PID controller.</p>
+
+
+
+
+      <pre><code> void ComputePID(double Kp,double Ki,double Kd) {
+
+
+     double error =  input_PID - setPoint;
+
+    // calculate the integral
+    errSum += error;
+
+
+    // calculate the derivate
+    double dErr = error - lastErr;
+
+    // get the output
+    output_PID = Kp * error + Ki * errSum + Kd * dErr;
+
+
+    // record the error and the time now
+    lastErr = error;
+
+          } </code></pre>
+
+
+
+
+    <a href="index.html">Back to the main page</a>
+    </div>
+</body>
+</html>
