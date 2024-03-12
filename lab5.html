@@ -39,7 +39,7 @@
     errSum += error;
 
 
-    // calculate the derivate
+    // calculate the derivative
     double dErr = error - lastErr;
 
     // get the output
@@ -50,9 +50,111 @@
     lastErr = error;
 
           } </code></pre>
+    <p>I also create several arrays and use previous code to send back the data to computer. Here is part
+    of the code. It will stop after 200 iterations.</p>
+        <pre><code> for(int i=0;i<200;i++){
+              tx_estring_value.clear();
+              tx_estring_value.append("T:");
+              tx_estring_value.append(time_stamp1[i]/1000);
+              tx_estring_value.append("|");
+              tx_estring_value.append("TOF1:");
+              tx_estring_value.append(distance1_array[i]);
+              tx_estring_value.append("|");
+              tx_estring_value.append("TOF2:");
+              tx_estring_value.append(distance2_array[i]);
+              tx_estring_value.append("|");
+              tx_estring_value.append("PID_output:");
+              tx_estring_value.append(output_pid[i]);
+              tx_estring_value.append("|");
+              tx_estring_value.append("Pitch:");
+              tx_estring_value.append(pitch_array[i]);
+              tx_estring_value.append("|");
+              tx_estring_value.append("Roll:");
+              tx_estring_value.append(roll_array[i]);
+              tx_estring_value.append("|");
+              tx_estring_value.append("Yaw:");
+              tx_estring_value.append(yaw_array[i]);
+              // write the appended string
+              tx_characteristic_string.writeValue(tx_estring_value.c_str());
+
+          }
+          change_speed(0,0);</code></pre>
+    <p>Here is the code in Python. It is quite similar to before except with a new command and three
+    input values which are Kp,Ki,Kd.</p>
+        <pre><code>
+            def get_notification3(uuid, byte_array):
+            global message
+            message=ble.bytearray_to_string(byte_array)
+            print(message)
+
+            ble.start_notify(ble.uuid['RX_STRING'], get_notification3)
+            ble.send_command(CMD.MOVE_WITH_PID, "|0.1|0.02|0.001")</code></pre>
+    <p>The result is like:</p>
+    <div class="center-video">
+           <img src="assets/img/lab5_1.png" alt="lab5_1">
+    </div>
+    <h2>3. Lab Tasks</h2>
+    <h3>3.1 P/I/D discussion</h3>
+    <p>From the previous image, it can be observed that the average sample period is about 200ms.
+    Therefore, the sampling frequency is 5 Hz. It can be improved by extrapolation in the future.
+    The range of TOF sensor is about 4m. Here, I put the robot 2000 mm away from the wall.
+    In order to get the speed of the robot, I looked at one of the trials and calculate the result.</p>
+    <div class="center-video">
+           <img src="assets/img/lab5_2.png" alt="lab5_2">
+    </div>
+    <p>It can be observed that the maximum speed is 0.72m/s and the maximum PWM value is 255. The
+    maximum error is 2000-304=1704 mm which is approximate to 1700 mm.</p>
+    <p>From the course, The Kp should be equal to maximum pwm value/maximum error which is 255/1700mm=0.15.
+    The Kp is finally set to 0.1. As Ki will multiplied by the integrated value, Ki should be
+    equal to Kp/5 Hz=0.03. The Ki is finally set to 0.01. Kd should be equal to maximum pwm/(maximum speed/
+    sampling time)=255/3.6=70. Kd has a relatively small effect and the final value I set is 10. The reasom
+    I set all these values smaller than it should be is because it can not stop in time due to the inertia.
+    Therefore, I need to set these value smaller to get a smaller PWM value.</p>
+    <h3>3.2 Working system</h3>
+    <p>The deadband of this car is about 40 which is measured from lab 5. Therefore, the PWM should add
+    40 if it is not small enough. The wind up value I set is 200. If the value of integrator is larger
+    than 200, it will be equal to 200. As the set point is fixed, there is no need to worry
+    derivative kick. Besides, the PWM value should not exceed the maximum limit (255) and the
+    initial error should be 1700. Here is the code.</p>
+    <pre><code>
+            void ComputePID(double Kp,double Ki,double Kd,int Imax,int minspeed) {
+
+
+  double error =  input_PID - setPoint;
+
+  // calculate the integral
+  errSum += error;
+
+  if(errSum>Imax){
+    errSum=Imax;
+  }
+  if(errSum<-Imax){
+    errSum=-Imax;
+  }
+  // calculate the derivate
+  double dErr = error - lastErr;
+
+  // get the output
+  output_PID = Kp * error + Ki * errSum + Kd * dErr;
+  if(output_PID>1){
+    output_PID=output_PID+minspeed;
+  }
+  if(output_PID<-1){
+    output_PID=output_PID-minspeed;
+  }
+  if(output_PID >= 255){
+    output_PID=254;
+  }
+   if(output_PID <= -255){
+    output_PID=-254;
+  }
 
 
 
+  // record the error and the time now
+  lastErr = error;
+
+}</code></pre>
 
     <a href="index.html">Back to the main page</a>
     </div>
