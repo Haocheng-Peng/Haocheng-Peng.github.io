@@ -114,48 +114,97 @@
     <p>The deadband of this car is about 40 which is measured from lab 5. Therefore, the PWM should add
     40 if it is not small enough. The wind up value I set is 200. If the value of integrator is larger
     than 200, it will be equal to 200. As the set point is fixed, there is no need to worry
-    derivative kick. Besides, the PWM value should not exceed the maximum limit (255) and the
+    derivative kick. The error change is quite slow so there is no need to add a low pass filter.Besides, the PWM value should not exceed the maximum limit (255) and the
     initial error should be 1700. Here is the code.</p>
     <pre><code>
-            void ComputePID(double Kp,double Ki,double Kd,int Imax,int minspeed) {
+        void ComputePID(double Kp,double Ki,double Kd,int Imax,int minspeed) {
 
 
-  double error =  input_PID - setPoint;
+        double error =  input_PID - setPoint;
 
-  // calculate the integral
-  errSum += error;
+        // calculate the integral
+        errSum += error;
 
-  if(errSum>Imax){
-    errSum=Imax;
-  }
-  if(errSum<-Imax){
-    errSum=-Imax;
-  }
-  // calculate the derivate
-  double dErr = error - lastErr;
+        if(errSum>Imax){
+        errSum=Imax;
+        }
+        if(errSum<-Imax){
+            errSum=-Imax;
+        }
+        // calculate the derivate
+        double dErr = error - lastErr;
 
-  // get the output
-  output_PID = Kp * error + Ki * errSum + Kd * dErr;
-  if(output_PID>1){
-    output_PID=output_PID+minspeed;
-  }
-  if(output_PID<-1){
-    output_PID=output_PID-minspeed;
-  }
-  if(output_PID >= 255){
-    output_PID=254;
-  }
-   if(output_PID <= -255){
-    output_PID=-254;
-  }
+        // get the output
+        output_PID = Kp * error + Ki * errSum + Kd * dErr;
+        if(output_PID>1){
+            output_PID=output_PID+minspeed;
+        }
+        if(output_PID<-1){
+            output_PID=output_PID-minspeed;
+        }
+        if(output_PID >= 255){
+            output_PID=254;
+        }
+        if(output_PID <= -255){
+            output_PID=-254;
+        }
 
 
 
-  // record the error and the time now
-  lastErr = error;
+        // record the error and the time now
+        lastErr = error;
 
 }</code></pre>
+    <h3>3.3 Extrapolation</h3>
+    <p>Follow the instructions, I directly implement the extrapolation with last two data points. Here is the code.</p>
+    <pre><code>
+         current_time = (int)millis();
+        if (distanceSensor1.checkForDataReady())
+        {
 
+
+        distance1 = distanceSensor1.getDistance(); //Get the result of the measurement from the sensor
+
+        //Extrapolation
+        last2_distance = last1_distance;
+        last1_distance = distance1;
+        last2_time = last1_time;
+        last1_time = current_time;
+        distanceSensor1.clearInterrupt();
+
+        }
+        else
+        {
+            if(last2_distance!=0&&last2_time!=0)    //check if it just begin
+            {
+                distance1 = last1_distance - (last2_distance-last1_distance)*(current_time-last1_time)/(last1_time-last2_time);
+            }
+
+        }
+
+        if(distance1<0){
+            distance1=0;
+        }
+        // get and process the output of pid
+        input_PID=distance1;
+        ComputePID(Kp,Ki,Kd,Imax,minspeed);
+        change_speed(output_PID,output_PID);
+    </code></pre>
+    <p>The result is shown below.</p>
+    <div class="center-video">
+           <img src="assets/img/lab5_3.png" alt="lab5_3">
+    </div>
+    <p>It can be observed from the image that the rate of PID control loop is about 1/10ms=100Hz
+    which is much faster than the rate of two TOF sensors' update.</p>
+    <h3>3.4 videos</h3>
+    <p>I just have 1 video because when I want to record more videos and further adjust the parameters, one
+    of the motor driver seems to be broken. I need to get a new one or ask TA to help me fix this problem.
+    I will upload more videos later.</p>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/Uv5Z_sz6vbs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <h3>3.5 (5000)Wind-up implementation and discussion</h3>
+    <p>I have applied the wind-up protection for my integrator. Once I fix the hardware problem I will upload more videos</p>
     <a href="index.html">Back to the main page</a>
     </div>
 </body>
