@@ -197,15 +197,30 @@
     <p>It can be observed from the image that the rate of PID control loop is about 1/10ms=100Hz
     which is much faster than the rate of two TOF sensors' update.</p>
     <h3>3.4 videos</h3>
-    <p>I just have 1 video because when I want to record more videos and further adjust the parameters, one
-    of the motor driver seems to be broken. I need to get a new one or ask TA to help me fix this problem.
-    I will upload more videos later.</p>
+    <p>Here are three videos. The distance of first one is not enough while the other two shows
+    how the final version of the linear PID controller control this robot.</p>
+    <p>video 1</p>
     <div class="center-video">
     <iframe width="600" height="330" src="https://www.youtube.com/embed/Uv5Z_sz6vbs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
+    <p>video 2</p>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/y7Ld6Wl8EEk" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <p>video 3</p>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/FjYnsgp1rZo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+
     <h3>3.5 (5000)Wind-up implementation and discussion</h3>
-    <p>I have applied the wind-up protection for my integrator. Once I fix the hardware problem I will upload more videos</p>
+    <p>I have applied the wind-up protection for my integrator. Besides, I also let the Ki to be equal to 0 when the car is close
+    to the wall. The integrator sometimes creates very strange situation. The robot may move backward without stopping or crash to the wall.
+    Here is the video. I believe it is because the delay produced by the integrator.</p>
+    <div class="center-video">
+    <iframe width="600" height="330" src="https://www.youtube.com/embed/WwYxea_JJz0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
     <a href="index.html">Back to the main page</a>
+
     </div>
 </body>
 </html>
