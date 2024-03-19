@@ -105,9 +105,9 @@
     <p>It can be observed that the maximum speed is 0.72m/s and the maximum PWM value is 255. The
     maximum error is 2000-304=1704 mm which is approximate to 1700 mm.</p>
     <p>From the course, The Kp should be equal to maximum pwm value/maximum error which is 255/1700mm=0.15.
-    The Kp is finally set to 0.1. As Ki will multiplied by the integrated value, Ki should be
+    The Kp is finally set to 0.06. As Ki will multiplied by the integrated value, Ki should be
     equal to Kp/5 Hz=0.03. The Ki is finally set to 0.01. Kd should be equal to maximum pwm/(maximum speed/
-    sampling time)=255/3.6=70. Kd has a relatively small effect and the final value I set is 10. The reasom
+    sampling time)=255/3.6=70. Kd has a relatively small effect and the final value I set is 1. The reason
     I set all these values smaller than it should be is because it can not stop in time due to the inertia.
     Therefore, I need to set these value smaller to get a smaller PWM value.</p>
     <h3>3.2 Working system</h3>
