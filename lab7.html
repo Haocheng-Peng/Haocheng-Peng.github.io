@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <title>lab5</title>
+     <style>
+        .center-video {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+
+    <title>Matrix Representation</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        table {
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div style="width: 50%; margin: auto; text-align: center;">
+    <h1>Lab 7: Kalman Filter</h1>
+    <h2>1. Objective</h2>
+    <p>The main goal of lab7 is to implement a Kalman Filter which can help me to
+     supplement the slowly sampled ToF values. After that, it can help the robot to run
+    torwards the wall in a faster speed and stop at 1 feet.</p>
+
+    <h2>2. Lab tasks</h2>
+    <h3>2.1 Estimate drag and momentum</h3>
+    <p>The step response I choose is 150. The maximum PWM value is 255 and this value is
+    suitable for estimating the drag and momentum. This value can help the robot to test the
+    steady state.</p>
+    <p>From the graph below, it can be observed that the steady state speed is about 1850 mm/s.
+    The 90% rise time is 1.04s. Therefore: </p>
+    <p>\( d = \frac{u}{x'} = \frac{150}{1850} =  0.081\) </p>
+    <p>\( m = \frac{-dt0.9}{ln(1-0.9)} = \frac{-0.081*1.04}{ln(0.1)} = 0.037\) </p>
+    <p>Therefore, the A matrix and B matrix are:</p>
+    <p>A=</p>
+    <h2 style="text-align:center">Matrix Representation</h2>
+
+<table>
+    <tr>
+        <td>a<sub>0</sub></td>
+        <td>a<sub>1</sub></td>
+    </tr>
+    <tr>
+        <td>a<sub>0</sub></td>
+        <td>a<sub>-d/m=-2.189</sub></td>
+    </tr>
+</table>
+    <p>B=</p>
+    <h2 style="text-align:center">Matrix Representation</h2>
+
+<table>
+    <tr>
+        <td>a<sub>0</sub></td>
+        <td>a<sub>1/m=27.02</sub></td>
+    </tr>
+
+</table>
+
+<a href="index.html">Back to the main page</a>
+    </div>
+</body>
+</html>
