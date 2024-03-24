@@ -46,16 +46,20 @@
     <p>The step response I choose is 150. The maximum PWM value is 255 and this value is
     suitable for estimating the drag and momentum. This value can help the robot to test the
     steady state.</p>
-    <p>From the graph below, it can be observed that the steady state speed is about 1850 mm/s.
-    The 90% rise time is 1.04s. Therefore: </p>
-    <p>\( d = \frac{u}{x'} = \frac{150}{1850} =  0.081\) </p>
-    <p>\( m = \frac{-dt<sub>0.9</sub>}{ln(1-0.9)} = \frac{-0.081*1.04}{ln(0.1)} = 0.037\) </p>
+    <p>From the graph below, it can be observed that the steady state speed is about 2000 mm/s.
+    The 90% rise time is 1.13s.</p>
+        <div class="center-video">
+           <img src="assets/img/lab7_1.png" alt="lab7_1">
+    </div>
+    <p>Therefore: </p>
+    <p>\( d = \frac{u}{x'} = \frac{150}{2000} =  0.075\) </p>
+    <p>\( m = \frac{-dt<sub>0.9</sub>}{ln(1-0.9)} = \frac{-0.075*1.13}{ln(0.1)} = 0.037\) </p>
     <p>Therefore, the A matrix and B matrix are:</p>
     <p>A=</p>
     $$
     \begin{bmatrix}
     0 & 1 \\
-    0 & \frac{-d}{m}=2.35 \\
+    0 & \frac{-d}{m}=-2.03 \\
     \end{bmatrix}
     $$
 
@@ -66,22 +70,82 @@
     $$
     \begin{bmatrix}
     0\\
-    \frac{1}{m}=27.02\\
+    \frac{1}{m}=27.03\\
     \end{bmatrix}
     $$
 
-<div class="matrix">
-  <span class="bracket left">[</span>
-  <table>
-    <tr>
-        <td>0</td>
-        <td>1/m=27.02</td>
-    </tr>
+    <p>C=</p>
 
-</table>
-  <span class="bracket right">]</span>
-</div>
+    $$
+    \begin{bmatrix}
+    -1 & 0\\
+    \end{bmatrix}
+    $$
 
+    <h3>2. Initialize KF (Python)</h3>
+    <p>First, we need to initialize Ad and Bd following the equation:</p>
+    <p>\( Ad = (I+dt*A)\) </p>
+    <p>\( Bd = dt*B)\) </p>
+    <p>The sample period dt I choose is about 0.2s. Following the instructions
+    from class the Σu and Σz are:</p>
+    $$
+    \begin{bmatrix}
+    σx<sup>2</sup> & 0 \\
+    0 & σv<sup>2</sup> \\
+    \end{bmatrix}
+    $$
+
+    $$
+    \begin{bmatrix}
+    σz<sup>2</sup>\\
+    \end{bmatrix}
+    $$
+
+    <p>Here the σz=20 and σx=σv=<p>\( \sqrt{10<sup>2</sup>*frac{1}{dt}} \)</p></p>
+    <h3>3. Implement and test your Kalman Filter in Jupyter (Python)</h3>
+    <p>Following the instruction and the code, I get the output of Kalman filter. In order to get a more
+    accurate output, I decrease σz to 5. Here is the code and the result of estimated distance and the real distance.</p>
+
+    <pre><code>
+        kf_out=[]
+        kf_vel=[]
+        sigma = sig_u
+        u = np.array([[-1756],[0]])
+        for t,mo,d in zip(time_array,pwm_array,dist_array):
+            mu,sigma = kf(u,sigma,mo/150,d)
+            kf_out.append(mu[0][0])
+            kf_vel.append(mu[1][0])
+    </code></pre>
+    <div class="center-video">
+           <img src="assets/img/lab7_2.png" alt="lab7_2">
+    </div>
+    <p>Although the estimated distance is correct, the estimated speed is inaccurate and I can not
+    figure out the reason.</p>
+    <h3>(5000) Faster frequency</h3>
+    <p>If I use the Kalman filter in a faster speed, I need to use only the prediction step
+    to estimate the state. The new Kalman filter in python should be:</p>
+        <pre><code>
+            def kf_pred(mu,sigma,u,y,update):
+
+                mu_p = A.dot(mu) + B.dot(u)
+                sigma_p = A.dot(sigma.dot(A.transpose())) + sig_u
+
+                if(update):
+                    sigma_m = C.dot(sigma_p.dot(C.transpose())) + sig_z
+                    kkf_gain = sigma_p.dot(C.transpose().dot(np.linalg.inv(sigma_m)))
+
+                    y_m = y-C.dot(mu_p)
+                    mu = mu_p + kkf_gain.dot(y_m)
+                    sigma=(np.eye(2)-kkf_gain.dot(C)).dot(sigma_p)
+                else:
+                    mu=mu_p
+                    sigma=sigma_p
+                return mu,sigma
+        </code></pre>
+        <p>The frequency of kalman filter is twice the frequency of ToF readings. The result is shown below.</p>
+        <div class="center-video">
+           <img src="assets/img/lab7_3.png" alt="lab7_3">
+    </div>
 <a href="index.html">Back to the main page</a>
     </div>
 </body>
