@@ -82,7 +82,7 @@
     \end{bmatrix}
     $$
 
-    <h3>2. Initialize KF (Python)</h3>
+    <h3>2.2 Initialize KF (Python)</h3>
     <p>First, we need to initialize Ad and Bd following the equation:</p>
     <p>\( Ad = (I+dt*A)\) </p>
     <p>\( Bd = dt*B)\) </p>
@@ -102,7 +102,7 @@
     $$
 
     <p>Here the σz=20 and σx=σv=<p>\( \sqrt{10<sup>2</sup>*frac{1}{dt}} \)</p></p>
-    <h3>3. Implement and test your Kalman Filter in Jupyter (Python)</h3>
+    <h3>2.3 Implement and test your Kalman Filter in Jupyter (Python)</h3>
     <p>Following the instruction and the code, I get the output of Kalman filter. In order to get a more
     accurate output, I decrease σz to 5. Here is the code and the result of estimated distance and the real distance.</p>
 
@@ -121,7 +121,7 @@
     </div>
     <p>Although the estimated distance is correct, the estimated speed is inaccurate and I can not
     figure out the reason.</p>
-    <h3>(5000) Faster frequency</h3>
+    <h3>2.4 (5000) Faster frequency</h3>
     <p>If I use the Kalman filter in a faster speed, I need to use only the prediction step
     to estimate the state. The new Kalman filter in python should be:</p>
         <pre><code>
