@@ -53,7 +53,7 @@
     </div>
     <p>Therefore: </p>
     <p>\( d = \frac{u}{x'} = \frac{150}{2000} =  0.075\) </p>
-    <p>\( m = \frac{-dt<sub>0.9</sub>}{ln(1-0.9)} = \frac{-0.075*1.13}{ln(0.1)} = 0.037\) </p>
+    <p>\( m = \frac{-dt_{0.9}}{ln(1-0.9)} = \frac{-0.075*1.13}{ln(0.1)} = 0.037\) </p>
     <p>Therefore, the A matrix and B matrix are:</p>
     <p>A=</p>
     $$
@@ -90,18 +90,18 @@
     from class the Σu and Σz are:</p>
     $$
     \begin{bmatrix}
-    σx<sup>2</sup> & 0 \\
-    0 & σv<sup>2</sup> \\
+    σx^{2} & 0 \\
+    0 & σv^{2} \\
     \end{bmatrix}
     $$
 
     $$
     \begin{bmatrix}
-    σz<sup>2</sup>\\
+    σz^{2}\\
     \end{bmatrix}
     $$
 
-    <p>Here the σz=20 and σx=σv=<p>\( \sqrt{10<sup>2</sup>*frac{1}{dt}} \)</p></p>
+    <p>Here the σz=20 and σx=σv=<p>\( \sqrt{10^{2}*frac{1}{dt}} \)</p></p>
     <h3>2.3 Implement and test your Kalman Filter in Jupyter (Python)</h3>
     <p>Following the instruction and the code, I get the output of Kalman filter. In order to get a more
     accurate output, I decrease σz to 5. Here is the code and the result of estimated distance and the real distance.</p>
