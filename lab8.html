@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <title>lab7</title>
+     <style>
+        .center-video {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+
+    <title>Matrix Representation</title>
+    <style>
+        table, th, td {
+            border: 1px solid white;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        table {
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div style="width: 50%; margin: auto; text-align: center;">
+    <h1>Lab 8: Stunts</h1>
+    <h2>1. Objective</h2>
+     <p>The objective of this lab is to use all the things I have done so far to
+     achieve fast stunts.</p>
+
+    <h2>2. Lab tasks</h2>
+    <p>The task I choose is task B. It is quite simple to achieve the required stunt. I need to add
+    the code to achieve a 180 degree turn when the car is close to the wall. It need to be done only once
+    and use both PID controller for TOF sensor and orientation. Here is the code</p>
+
+        <pre><code>
+
+        if(distance1<500 && imu_pid_setpoint==true){
+
+        //map to -180 to 180
+        setPoint1_imu = fmod(yaw_imu + 180, 360);
+        if (setPoint1_imu > 180) {
+            setPoint1_imu -= 360;
+        }
+
+        imu_pid_setpoint=false;
+        }
+
+        // if the setpoint has set and the error exceeds the limit
+        if(imu_pid_setpoint==false && abs(setPoint1_imu-yaw_imu)>12){
+        input_PID_imu = yaw_imu;
+        PID_forimu(Kp_imu,Ki_imu,Kd_imu,Imax_imu,minspeed_imu,setPoint1_imu);
+
+        change_speed(output_PID_imu,-output_PID_imu);
+
+
+        }
+        // return back
+        if(abs(setPoint1_imu-yaw_imu)<=12 && imu_pid_setpoint==false){
+          change_speed(100,100);
+        }
+        </code></pre>
+        <p>Sometimes, the car need spin around several times to attain the correct angle. In order to sdeal with
+        this problem, I set the largest PWM in the orientation PID to be 150 to solve this problem. Here are three videos.</p>
+        <p>In the beginning, the car sometimes need more time to rotate to the designed direction.</p>
+        <p>video 1</p>
+         <div class="center-video">
+        <iframe width="600" height="330" src="https://www.youtube.com/embed/up58L-QGNM0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <p>After adjustment, it can achieve the performed result.</p>
+        <p>video 2</p>
+        <div class="center-video">
+        <iframe width="600" height="330" src="https://www.youtube.com/embed/WpN5Hr7k1TQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <p>video 3</p>
+        <div class="center-video">
+        <iframe width="600" height="330" src="https://www.youtube.com/embed/WpN5Hr7k1TQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+    <a href="index.html">Back to the main page</a>
+    </div>
+
+</body>
+</html>
