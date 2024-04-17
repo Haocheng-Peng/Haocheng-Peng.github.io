@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <title>lab7</title>
+     <style>
+        .center-video {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+
+    <title>Matrix Representation</title>
+    <style>
+        table, th, td {
+            border: 1px solid white;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        table {
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div style="width: 50%; margin: auto; text-align: center;">
+    <h1>Lab 9: Mapping</h1>
+    <h2>1. Objective</h2>
+    <p>The main goal of this lab is to map out a static space. It can be used in future tasks.
+    To do this, the robot need to be placed in different locations and spin around its axis while
+    collecting the ToF readings.</p>
+    <h2>2. Lab Tasks</h2>
+    <h3>2.1 Control</h3>
+    <p>The method I choose is Orientation control. I use the orientation PID controller from the previous lab to achieve
+    a 25 degree turn in each time. It has about 14 readings per 360 degree turn. Here is the output PWM after a new set point
+    is set.</p>
+    <div class="center-video">
+           <img src="assets/img/lab9_1.png" alt="lab9_1">
+    </div>
+     <p>The video below the robot can turn on axis.</p>
+     <div class="center-video">
+        <iframe width="600" height="330" src="https://www.youtube.com/embed/SO_fT0ilrfM" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+     <p>As I mentioned before, I used the DMP to get yaw. Therefore, there is little
+     drift. Although each time the robot should turn 25 degree but sometimes it has about
+         5 degree bias. I will let it to rotate slightly more than 360 degree to ensure it can
+     get enough data. When the robot is spinning, it will also have a 3 to 4 cm deviation from
+     the origin. Here is the part of the code used in this lab.</p>
+     <pre><code>
+     //turn 25 degree each time
+        //map to -180 to 180
+
+        float setPoint_imu = fmod(yaw + 25, 360);
+        if (setPoint_imu > 180) {
+            setPoint_imu -= 360;
+        }
+        //record the set point
+        setpoint_array[count_turn360]=setPoint_imu;
+
+        //
+        while(input_PID_imu>170 && input_PID_imu<180){
+          getnewIMU();
+          change_speed(-125,125);
+
+        }
+
+
+        output_PID_imu=-20;
+        // if the output_pid shows it has not finish turning (still large enough), it continue to turn this 25 degree
+        while(output_PID_imu>10 || output_PID_imu<-10){
+        getnewIMU();
+        //read the data from imu to get yaw
+
+        PID_forimu(Kp_imu,Ki_imu,Kd_imu,Imax_imu,minspeed_imu,setPoint_imu);
+        change_speed(output_PID_imu,-output_PID_imu);
+
+        }
+
+
+
+        //wait one second to let it stable
+        delay(1000);
+        //read TOF data
+        distanceSensor1.startRanging(); //Write configuration bytes to initiate measurement
+        while (!distanceSensor1.checkForDataReady())
+        {
+          delay(1);
+        }
+        int distance_11 = distanceSensor1.getDistance(); //Get the result of the measurement from the sensor
+        distanceSensor1.clearInterrupt();
+        distanceSensor1.stopRanging();
+        distance1_array[count_turn360]=distance_11;
+
+        //wait for other one second to turn next time
+        delay(1000);
+     </code></pre>
+        <h3>2.2 Execute the turn in the designed lab space</h3>
+        <p>I put my robot in each marked positions in the lab space and let it turn about 720 degree each time.
+        Here is the code to generate the polar plot and one of the polar plot.</p>
+        <pre><code>
+        # Open the file and read its content
+        with open("outputlab9_5.txt", "r") as file:
+            content = file.read()
+
+        # extract the values
+        distance5 = r"TOF1:(-?\d+(?:\.\d+)?)"
+        yaw5 = r"Yaw:(-?\d+(?:\.\d+)?)"
+
+
+        # Find all matched data and convert them to floats
+        distance_array5 = [float(match) for match in re.findall(distance5, content)]
+        yaw_array5 = [float(match) for match in re.findall(yaw5, content)]
+
+        distance_array5=np.array(distance_array5)
+        yaw_array5=np.array(yaw_array5)
+
+        radians_array5 = yaw_array5 * (np.pi / 180)
+
+        # establish polar plot
+        plt.figure()
+        ax = plt.subplot(111, polar=True)
+
+        # plot
+        ax.plot(radians_array5, distance_array5, marker='o')  # 使用'o'标记点
+
+
+        plt.title('Polar Plot Example')
+
+
+        plt.show()
+        </code></pre>
+        <div class="center-video">
+           <img src="assets/img/lab9_2.png" alt="lab9_2">
+    </div>
+    <p>It can be observed that the returned distance is always smaller than 500 mm. However the actual distance is about 700mm. merge all polar plots
+    and data we can get the measured points (by TOF) and the actual map (The blue points are measured data points and red lines represents the actual wall and box). </p>
+    <div class="center-video">
+           <img src="assets/img/lab9_3.png" alt="lab9_3">
+    </div>
+    <p>In the beginning, I believed it was the problem of TOF sensor. However, the sensor can return correct distance in other situations. I try
+    to adjust the position of TOF sensor but it still return a very short distance. To verify the code is correct, I build a small lab space in Nils lab.</p>
+
+    <h3>2.3 Execute the turn in the new lab space</h3>
+    <p>Here is the picture of this new environment which has 3 marked position.</p>
+    <div class="center-video">
+           <img src="assets/img/lab9_4.png" alt="lab9_4">
+    </div>
+
+
+
+    <a href="index.html">Back to the main page</a>
+    </div>
+
+</body>
+</html>
