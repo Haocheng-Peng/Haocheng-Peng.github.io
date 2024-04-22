@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <title>lab10</title>
+     <style>
+        .center-video {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+
+    <title>Matrix Representation</title>
+    <style>
+        table, th, td {
+            border: 1px solid white;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        table {
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div style="width: 50%; margin: auto; text-align: center;">
+    <h1>Lab 10: Grid Localization using Bayes Filter</h1>
+    <h2>1. Objective</h2>
+    <p>The main goal of this lab is to implement grid localization with Bayes filter and show it works well</p>
+    <h2>2. Lab Tasks</h2>
+    <h3>2.1 Code</h3>
+    <p>In order to perform grid localization for the sample trajectory, I read all instructions and tips and write the code to
+    implement the five functions: compute_control, odom_motion_model, prediction_step, sensor_model, update_step. I change the
+    input and output form of sensor_model. Here is the code.</p>
+    <pre><code>
+# In the docstring, "pose" refers to a numpy array with elements (x,y,yaw) in (meters, meters, degrees)
+import math
+import numpy as np
+
+def compute_control(cur_pose, prev_pose):
+
+    """ Given the current and previous odometry poses, this function extracts
+    the control information based on the odometry motion model.
+
+    Args:
+        cur_pose  ([Pose]): Current Pose
+        prev_pose ([Pose]): Previous Pose
+
+    Returns:
+        [delta_rot_1]: Rotation 1  (degrees)
+        [delta_trans]: Translation (meters)
+        [delta_rot_2]: Rotation 2  (degrees)
+    """
+    rot_mid = math.degrees(math.atan2(cur_pose[1]-prev_pose[1],cur_pose[0]-prev_pose[0]))
+
+    delta_rot_1 = rot_mid-prev_pose[2]
+
+    delta_trans = np.sqrt(np.square(cur_pose[1]-prev_pose[1])+np.square(cur_pose[0]-prev_pose[0]))
+
+    delta_rot_2 = cur_pose[2]-rot_mid
+
+    delta_rot_1=loc.mapper.normalize_angle(delta_rot_1)
+    delta_rot_2=loc.mapper.normalize_angle(delta_rot_2)
+
+    return delta_rot_1, delta_trans, delta_rot_2
+
+def odom_motion_model(cur_pose, prev_pose, u):
+    """ Odometry Motion Model
+
+    Args:
+        cur_pose  ([Pose]): Current Pose
+        prev_pose ([Pose]): Previous Pose
+        (rot1, trans, rot2) (float, float, float): A tuple with control data in the format
+                                                   format (rot1, trans, rot2) with units (degrees, meters, degrees)
+
+
+    Returns:
+        prob [float]: Probability p(x'|x, u)
+    """
+    delta_rot1, delta_trans, delta_rot2 = compute_control(cur_pose, prev_pose)
+    actual_delta_rot1, actual_delta_trans, actual_delta_rot2 = u
+
+    p1 = loc.gaussian(delta_rot1,actual_delta_rot1,loc.odom_rot_sigma)
+    p2 = loc.gaussian(delta_trans,actual_delta_trans,loc.odom_trans_sigma)
+    p3 = loc.gaussian(delta_rot2,actual_delta_rot2,loc.odom_rot_sigma)
+
+    prob=p1*p2*p3
+
+    return prob
+
+def prediction_step(cur_odom, prev_odom):
+    """ Prediction step of the Bayes Filter.
+    Update the probabilities in loc.bel_bar based on loc.bel from the previous time step and the odometry motion model.
+
+    Args:
+        cur_odom  ([Pose]): Current Pose
+        prev_odom ([Pose]): Previous Pose
+    """
+
+    actual_u=compute_control(cur_odom, prev_odom)
+
+    for x_pre in range(loc.mapper.MAX_CELLS_X):
+        for y_pre in range(loc.mapper.MAX_CELLS_Y):
+            for a_pre in range(loc.mapper.MAX_CELLS_A):
+                # if the probability is very small, skip it
+                if loc.bel[x_pre,y_pre,a_pre]<0.0001:
+                    continue
+                else:
+                    for x in range(loc.mapper.MAX_CELLS_X):
+                        for y in range(loc.mapper.MAX_CELLS_Y):
+                            for a in range(loc.mapper.MAX_CELLS_A):
+                                prob=odom_motion_model(loc.mapper.from_map(x, y, a), loc.mapper.from_map(x_pre,y_pre,a_pre), actual_u)
+                                loc.bel_bar[x,y,a] += prob * loc.bel[x_pre,y_pre,a_pre]
+
+    # do the normalization
+    bel_bar_total=np.sum(loc.bel_bar)
+    if bel_bar_total > 0:
+        loc.bel_bar /= bel_bar_total
+
+
+def sensor_model(obs,curr_state):
+    """ This is the equivalent of p(z|x).
+
+
+    Args:
+        obs ([ndarray]): A 1D array consisting of the true observations for a specific robot pose in the map
+
+    Returns:
+        [ndarray]: Returns the likelihood of 18 measurements
+    """
+    prob_array=[]
+    for i in range(loc.mapper.OBS_PER_CELL):
+        prob=loc.gaussian(obs[i],curr_state[i],loc.sensor_sigma)
+        prob_array.append(prob)
+
+    prob_array=np.array(prob_array)
+    total_prob = np.prod(prob_array)
+
+    return total_prob
+
+def update_step():
+    """ Update step of the Bayes Filter.
+    Update the probabilities in loc.bel based on loc.bel_bar and the sensor model.
+    """
+    for x in range(loc.mapper.MAX_CELLS_X):
+        for y in range(loc.mapper.MAX_CELLS_Y):
+            for a in range(loc.mapper.MAX_CELLS_A):
+                loc.bel[x,y,a]=sensor_model(loc.obs_range_data,loc.mapper.get_views(x,y,a))*loc.bel_bar[x,y,a]
+    loc_bel_sum = np.sum(loc.bel)
+    loc.bel=loc.bel/loc_bel_sum
+    </code></pre>
+    <h3>2.2 Result</h3>
+    <p>The output of initialize a uniform probability distribution and perform the update step of the Bayes Filter to localize the robot is:</p>
+    <pre>
+2024-04-22 17:03:35,844 | INFO     |: Initializing beliefs with a Uniform Distribution
+2024-04-22 17:03:35,845 | INFO     |: Uniform Belief with each cell value: 0.00051440329218107
+2024-04-22 17:03:38,955 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:03:38,962 | INFO     |: GT index      : (6, 4, 9)
+2024-04-22 17:03:38,963 | INFO     |: Bel index     : (5, 3, 9) with prob = 0.9973627
+2024-04-22 17:03:38,964 | INFO     |: Bel_bar prob at index = 0.00051440329218107
+2024-04-22 17:03:38,965 | INFO     |: GT            : (0.000, 0.000, 360.000)
+2024-04-22 17:03:38,967 | INFO     |: Belief        : (0.000, -0.305, 10.000)
+2024-04-22 17:03:38,968 | INFO     |: POS ERROR     : (-0.000, 0.305, 350.000)
+2024-04-22 17:03:38,970 | INFO     |: ---------- UPDATE STATS -----------
+    </pre>
+    <pre>
+----------------- 0 -----------------
+2024-04-22 17:04:55,904 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:04:55,920 | INFO     |: GT index         : (6, 3, 6)
+2024-04-22 17:04:55,921 | INFO     |: Prior Bel index  : (6, 5, 10) with prob = 0.1158881
+2024-04-22 17:04:55,922 | INFO     |: POS ERROR        : (-0.018, -0.393, -70.107)
+2024-04-22 17:04:55,922 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:04:59,037 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:04:59,047 | INFO     |: GT index      : (6, 3, 6)
+2024-04-22 17:04:59,048 | INFO     |: Bel index     : (6, 4, 6) with prob = 1.0
+2024-04-22 17:04:59,050 | INFO     |: Bel_bar prob at index = 0.00011300574683638963
+2024-04-22 17:04:59,050 | INFO     |: GT            : (0.287, -0.089, 319.893)
+2024-04-22 17:04:59,051 | INFO     |: Belief        : (0.305, 0.000, -50.000)
+2024-04-22 17:04:59,052 | INFO     |: POS ERROR     : (-0.018, -0.089, 369.893)
+2024-04-22 17:04:59,054 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 1 -----------------
+2024-04-22 17:05:01,120 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:01,135 | INFO     |: GT index         : (7, 2, 5)
+2024-04-22 17:05:01,136 | INFO     |: Prior Bel index  : (6, 2, 5) with prob = 0.0826062
+2024-04-22 17:05:01,137 | INFO     |: POS ERROR        : (0.197, 0.098, 366.975)
+2024-04-22 17:05:01,138 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:04,270 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:04,272 | INFO     |: GT index      : (7, 2, 5)
+2024-04-22 17:05:04,273 | INFO     |: Bel index     : (6, 2, 5) with prob = 1.0
+2024-04-22 17:05:04,274 | INFO     |: Bel_bar prob at index = 0.08260622566610608
+2024-04-22 17:05:04,275 | INFO     |: GT            : (0.510, -0.527, 656.975)
+2024-04-22 17:05:04,275 | INFO     |: Belief        : (0.305, -0.610, -70.000)
+2024-04-22 17:05:04,276 | INFO     |: POS ERROR     : (0.205, 0.083, 726.975)
+2024-04-22 17:05:04,276 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 2 -----------------
+2024-04-22 17:05:05,328 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:05,344 | INFO     |: GT index         : (7, 2, 4)
+2024-04-22 17:05:05,346 | INFO     |: Prior Bel index  : (5, 2, 3) with prob = 0.1606788
+2024-04-22 17:05:05,346 | INFO     |: POS ERROR        : (0.510, 0.083, 744.437)
+2024-04-22 17:05:05,347 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:08,479 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:08,485 | INFO     |: GT index      : (7, 2, 4)
+2024-04-22 17:05:08,486 | INFO     |: Bel index     : (6, 2, 4) with prob = 1.0
+2024-04-22 17:05:08,486 | INFO     |: Bel_bar prob at index = 0.011468687038371556
+2024-04-22 17:05:08,487 | INFO     |: GT            : (0.510, -0.527, 994.437)
+2024-04-22 17:05:08,489 | INFO     |: Belief        : (0.305, -0.610, -90.000)
+2024-04-22 17:05:08,490 | INFO     |: POS ERROR     : (0.205, 0.083, 1084.437)
+2024-04-22 17:05:08,491 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 3 -----------------
+2024-04-22 17:05:09,550 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:09,565 | INFO     |: GT index         : (7, 0, 4)
+2024-04-22 17:05:09,566 | INFO     |: Prior Bel index  : (6, 0, 3) with prob = 0.1440685
+2024-04-22 17:05:09,566 | INFO     |: POS ERROR        : (0.236, 0.294, 1104.437)
+2024-04-22 17:05:09,567 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:12,672 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:12,675 | INFO     |: GT index      : (7, 0, 4)
+2024-04-22 17:05:12,676 | INFO     |: Bel index     : (7, 1, 4) with prob = 1.0
+2024-04-22 17:05:12,676 | INFO     |: Bel_bar prob at index = 9.376543355288425e-05
+2024-04-22 17:05:12,678 | INFO     |: GT            : (0.541, -0.926, 1354.437)
+2024-04-22 17:05:12,679 | INFO     |: Belief        : (0.610, -0.914, -90.000)
+2024-04-22 17:05:12,680 | INFO     |: POS ERROR     : (-0.069, -0.011, 1444.437)
+2024-04-22 17:05:12,680 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 4 -----------------
+2024-04-22 17:05:15,769 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:15,782 | INFO     |: GT index         : (8, 0, 9)
+2024-04-22 17:05:15,785 | INFO     |: Prior Bel index  : (9, 1, 7) with prob = 0.0739270
+2024-04-22 17:05:15,787 | INFO     |: POS ERROR        : (-0.417, -0.147, 1471.334)
+2024-04-22 17:05:15,789 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:18,910 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:18,919 | INFO     |: GT index      : (8, 0, 9)
+2024-04-22 17:05:18,920 | INFO     |: Bel index     : (8, 1, 9) with prob = 1.0
+2024-04-22 17:05:18,921 | INFO     |: Bel_bar prob at index = 0.0002967758010305253
+2024-04-22 17:05:18,922 | INFO     |: GT            : (0.803, -1.061, 1801.334)
+2024-04-22 17:05:18,922 | INFO     |: Belief        : (0.914, -0.914, 10.000)
+2024-04-22 17:05:18,923 | INFO     |: POS ERROR     : (-0.112, -0.147, 1791.334)
+2024-04-22 17:05:18,924 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 5 -----------------
+2024-04-22 17:05:25,011 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:25,025 | INFO     |: GT index         : (11, 1, 11)
+2024-04-22 17:05:25,026 | INFO     |: Prior Bel index  : (8, 0, 7) with prob = 0.2798443
+2024-04-22 17:05:25,027 | INFO     |: POS ERROR        : (0.668, 0.335, 1880.301)
+2024-04-22 17:05:25,028 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:28,116 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:28,117 | INFO     |: GT index      : (11, 1, 11)
+2024-04-22 17:05:28,118 | INFO     |: Bel index     : (10, 1, 11) with prob = 1.0
+2024-04-22 17:05:28,119 | INFO     |: Bel_bar prob at index = 1.3474373381724962e-08
+2024-04-22 17:05:28,119 | INFO     |: GT            : (1.583, -0.884, 2210.301)
+2024-04-22 17:05:28,121 | INFO     |: Belief        : (1.524, -0.914, 50.000)
+2024-04-22 17:05:28,122 | INFO     |: POS ERROR     : (0.059, 0.031, 2160.301)
+2024-04-22 17:05:28,124 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 6 -----------------
+2024-04-22 17:05:30,194 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:30,208 | INFO     |: GT index         : (11, 2, 12)
+2024-04-22 17:05:30,209 | INFO     |: Prior Bel index  : (10, 3, 13) with prob = 0.0790988
+2024-04-22 17:05:30,210 | INFO     |: POS ERROR        : (0.133, -0.200, 2148.955)
+2024-04-22 17:05:30,211 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:33,317 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:33,331 | INFO     |: GT index      : (11, 2, 12)
+2024-04-22 17:05:33,332 | INFO     |: Bel index     : (11, 3, 13) with prob = 1.0
+2024-04-22 17:05:33,334 | INFO     |: Bel_bar prob at index = 0.001426833726858487
+2024-04-22 17:05:33,334 | INFO     |: GT            : (1.659, -0.491, 2598.955)
+2024-04-22 17:05:33,335 | INFO     |: Belief        : (1.829, -0.305, 90.000)
+2024-04-22 17:05:33,336 | INFO     |: POS ERROR     : (-0.169, -0.186, 2508.955)
+2024-04-22 17:05:33,337 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 7 -----------------
+2024-04-22 17:05:35,411 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:35,423 | INFO     |: GT index         : (11, 3, 13)
+2024-04-22 17:05:35,425 | INFO     |: Prior Bel index  : (11, 5, 16) with prob = 0.0605929
+2024-04-22 17:05:35,425 | INFO     |: POS ERROR        : (-0.099, -0.437, 2454.495)
+2024-04-22 17:05:35,428 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:38,519 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:38,526 | INFO     |: GT index      : (11, 3, 13)
+2024-04-22 17:05:38,527 | INFO     |: Bel index     : (11, 3, 13) with prob = 1.0
+2024-04-22 17:05:38,528 | INFO     |: Bel_bar prob at index = 0.0008273893744065211
+2024-04-22 17:05:38,529 | INFO     |: GT            : (1.730, -0.132, 2964.590)
+2024-04-22 17:05:38,530 | INFO     |: Belief        : (1.829, -0.305, 90.000)
+2024-04-22 17:05:38,531 | INFO     |: POS ERROR     : (-0.099, 0.173, 2874.590)
+2024-04-22 17:05:38,532 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 8 -----------------
+2024-04-22 17:05:41,621 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:41,637 | INFO     |: GT index         : (11, 5, 14)
+2024-04-22 17:05:41,638 | INFO     |: Prior Bel index  : (11, 6, 13) with prob = 0.0824727
+2024-04-22 17:05:41,640 | INFO     |: POS ERROR        : (-0.102, -0.250, 2897.800)
+2024-04-22 17:05:41,641 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:44,763 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:44,781 | INFO     |: GT index      : (11, 5, 14)
+2024-04-22 17:05:44,783 | INFO     |: Bel index     : (11, 4, 13) with prob = 0.8884502
+2024-04-22 17:05:44,783 | INFO     |: Bel_bar prob at index = 0.030911786371736173
+2024-04-22 17:05:44,785 | INFO     |: GT            : (1.727, 0.360, 3347.800)
+2024-04-22 17:05:44,787 | INFO     |: Belief        : (1.829, 0.000, 90.000)
+2024-04-22 17:05:44,788 | INFO     |: POS ERROR     : (-0.102, 0.360, 3257.800)
+2024-04-22 17:05:44,788 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 9 -----------------
+2024-04-22 17:05:47,894 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:47,906 | INFO     |: GT index         : (11, 6, 16)
+2024-04-22 17:05:47,907 | INFO     |: Prior Bel index  : (10, 6, 13) with prob = 0.1023932
+2024-04-22 17:05:47,908 | INFO     |: POS ERROR        : (0.201, 0.075, 3298.571)
+2024-04-22 17:05:47,909 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:50,995 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:51,001 | INFO     |: GT index      : (11, 6, 16)
+2024-04-22 17:05:51,002 | INFO     |: Bel index     : (11, 7, 16) with prob = 1.0
+2024-04-22 17:05:51,003 | INFO     |: Bel_bar prob at index = 0.0030344813734931404
+2024-04-22 17:05:51,004 | INFO     |: GT            : (1.725, 0.684, 3748.571)
+2024-04-22 17:05:51,005 | INFO     |: Belief        : (1.829, 0.914, 150.000)
+2024-04-22 17:05:51,005 | INFO     |: POS ERROR     : (-0.104, -0.230, 3598.571)
+2024-04-22 17:05:51,006 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 10 -----------------
+2024-04-22 17:05:53,114 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:53,118 | INFO     |: GT index         : (10, 7, 16)
+2024-04-22 17:05:53,119 | INFO     |: Prior Bel index  : (9, 6, 16) with prob = 0.0984926
+2024-04-22 17:05:53,120 | INFO     |: POS ERROR        : (0.079, 0.335, 3609.841)
+2024-04-22 17:05:53,121 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:56,247 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:05:56,263 | INFO     |: GT index      : (10, 7, 17)
+2024-04-22 17:05:56,265 | INFO     |: Bel index     : (10, 7, 16) with prob = 0.9998043
+2024-04-22 17:05:56,265 | INFO     |: Bel_bar prob at index = 0.015646578767092058
+2024-04-22 17:05:56,267 | INFO     |: GT            : (1.298, 0.945, 4120.033)
+2024-04-22 17:05:56,269 | INFO     |: Belief        : (1.524, 0.914, 150.000)
+2024-04-22 17:05:56,270 | INFO     |: POS ERROR     : (-0.226, 0.030, 3970.033)
+2024-04-22 17:05:56,271 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 11 -----------------
+2024-04-22 17:05:59,369 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:05:59,374 | INFO     |: GT index         : (7, 6, 3)
+2024-04-22 17:05:59,375 | INFO     |: Prior Bel index  : (6, 8, 2) with prob = 0.0885458
+2024-04-22 17:05:59,376 | INFO     |: POS ERROR        : (0.104, -0.410, 4347.417)
+2024-04-22 17:05:59,378 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:02,482 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:06:02,490 | INFO     |: GT index      : (7, 6, 3)
+2024-04-22 17:06:02,491 | INFO     |: Bel index     : (7, 7, 3) with prob = 0.9999999
+2024-04-22 17:06:02,492 | INFO     |: Bel_bar prob at index = 0.02650825413413902
+2024-04-22 17:06:02,493 | INFO     |: GT            : (0.409, 0.809, 4577.417)
+2024-04-22 17:06:02,494 | INFO     |: Belief        : (0.610, 0.914, -110.000)
+2024-04-22 17:06:02,495 | INFO     |: POS ERROR     : (-0.201, -0.105, 4687.417)
+2024-04-22 17:06:02,496 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 12 -----------------
+2024-04-22 17:06:04,580 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:04,591 | INFO     |: GT index         : (6, 4, 6)
+2024-04-22 17:06:04,592 | INFO     |: Prior Bel index  : (7, 6, 6) with prob = 0.1171219
+2024-04-22 17:06:04,593 | INFO     |: POS ERROR        : (-0.343, -0.435, 4674.028)
+2024-04-22 17:06:04,595 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:07,716 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:06:07,729 | INFO     |: GT index      : (6, 4, 6)
+2024-04-22 17:06:07,730 | INFO     |: Bel index     : (6, 4, 6) with prob = 1.0
+2024-04-22 17:06:07,731 | INFO     |: Bel_bar prob at index = 0.01895167153682893
+2024-04-22 17:06:07,732 | INFO     |: GT            : (0.267, 0.175, 4984.028)
+2024-04-22 17:06:07,733 | INFO     |: Belief        : (0.305, 0.000, -50.000)
+2024-04-22 17:06:07,734 | INFO     |: POS ERROR     : (-0.038, 0.175, 5034.028)
+2024-04-22 17:06:07,735 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 13 -----------------
+2024-04-22 17:06:09,795 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:09,810 | INFO     |: GT index         : (6, 3, 2)
+2024-04-22 17:06:09,811 | INFO     |: Prior Bel index  : (7, 2, 2) with prob = 0.1058974
+2024-04-22 17:06:09,812 | INFO     |: POS ERROR        : (-0.570, 0.456, 5045.284)
+2024-04-22 17:06:09,814 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:12,940 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:06:12,956 | INFO     |: GT index      : (6, 3, 2)
+2024-04-22 17:06:12,957 | INFO     |: Bel index     : (5, 3, 2) with prob = 1.0
+2024-04-22 17:06:12,959 | INFO     |: Bel_bar prob at index = 1.3164516707296048e-06
+2024-04-22 17:06:12,959 | INFO     |: GT            : (0.039, -0.154, 5275.284)
+2024-04-22 17:06:12,960 | INFO     |: Belief        : (0.000, -0.305, -130.000)
+2024-04-22 17:06:12,961 | INFO     |: POS ERROR     : (0.039, 0.151, 5405.284)
+2024-04-22 17:06:12,962 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 14 -----------------
+2024-04-22 17:06:16,055 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:16,066 | INFO     |: GT index         : (4, 2, 1)
+2024-04-22 17:06:16,067 | INFO     |: Prior Bel index  : (4, 4, 0) with prob = 0.1342123
+2024-04-22 17:06:16,068 | INFO     |: POS ERROR        : (-0.013, -0.333, 5422.457)
+2024-04-22 17:06:16,069 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:19,187 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:06:19,201 | INFO     |: GT index      : (4, 2, 1)
+2024-04-22 17:06:19,202 | INFO     |: Bel index     : (4, 3, 1) with prob = 1.0
+2024-04-22 17:06:19,203 | INFO     |: Bel_bar prob at index = 0.002228268174503864
+2024-04-22 17:06:19,203 | INFO     |: GT            : (-0.318, -0.333, 5612.457)
+2024-04-22 17:06:19,204 | INFO     |: Belief        : (-0.305, -0.305, -150.000)
+2024-04-22 17:06:19,205 | INFO     |: POS ERROR     : (-0.013, -0.029, 5762.457)
+2024-04-22 17:06:19,206 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+----------------- 15 -----------------
+2024-04-22 17:06:22,299 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:22,315 | INFO     |: GT index         : (3, 2, 0)
+2024-04-22 17:06:22,315 | INFO     |: Prior Bel index  : (5, 4, 0) with prob = 0.1396886
+2024-04-22 17:06:22,318 | INFO     |: POS ERROR        : (-0.718, -0.357, 5759.056)
+2024-04-22 17:06:22,319 | INFO     |: ---------- PREDICTION STATS -----------
+2024-04-22 17:06:25,420 | INFO     |: ---------- UPDATE STATS -----------
+2024-04-22 17:06:25,426 | INFO     |: GT index      : (3, 2, 0)
+2024-04-22 17:06:25,427 | INFO     |: Bel index     : (3, 3, 0) with prob = 0.9999828
+2024-04-22 17:06:25,427 | INFO     |: Bel_bar prob at index = 2.217016915872908e-05
+2024-04-22 17:06:25,428 | INFO     |: GT            : (-0.718, -0.357, 5949.152)
+2024-04-22 17:06:25,428 | INFO     |: Belief        : (-0.610, -0.305, -170.000)
+2024-04-22 17:06:25,429 | INFO     |: POS ERROR     : (-0.108, -0.052, 6119.152)
+2024-04-22 17:06:25,430 | INFO     |: ---------- UPDATE STATS -----------
+-------------------------------------
+
+
+
+    </pre>
+    <p>The trajectory of odometry(red), ground truth(green) and belief(blue) is shown below: </p>
+    <div class="center-video">
+           <img src="assets/img/lab10_1.png" alt="lab10_1">
+    </div>
+    <p>Here is a video of the best localization results</p>
+    <div class="center-video">
+        <iframe width="600" height="330" src="https://www.youtube.com/embed/lDPjGvblo6g" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <p>From the result above, it shows the bayes filter works all the time compared to the non-probalistic methods.
+    The prediction step can predict the position based on the priori estimation and robot motion model.Then, it updates using both prediction and measurement.
+    The result is quite similar to the ground truth.</p>
+
+
+    <a href="index.html">Back to the main page</a>
+    </div>
+
+</body>
+</html>
