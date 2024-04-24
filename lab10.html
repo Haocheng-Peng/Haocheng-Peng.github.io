@@ -43,7 +43,7 @@
     <p>In order to perform grid localization for the sample trajectory, I read all instructions and tips and write the code to
     implement the five functions: compute_control, odom_motion_model, prediction_step, sensor_model, update_step. I change the
     input and output form of sensor_model. Here is the code.</p>
-    <pre><code>
+    <pre>
 # In the docstring, "pose" refers to a numpy array with elements (x,y,yaw) in (meters, meters, degrees)
 import math
 import numpy as np
@@ -159,7 +159,7 @@ def update_step():
                 loc.bel[x,y,a]=sensor_model(loc.obs_range_data,loc.mapper.get_views(x,y,a))*loc.bel_bar[x,y,a]
     loc_bel_sum = np.sum(loc.bel)
     loc.bel=loc.bel/loc_bel_sum
-    </code></pre>
+    </pre>
     <h3>2.2 Result</h3>
     <p>The output of initialize a uniform probability distribution and perform the update step of the Bayes Filter to localize the robot is:</p>
     <pre>
