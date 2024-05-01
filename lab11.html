@@ -58,6 +58,7 @@
     are stored in the list, the function would return the required form of data which is mentioned in Tips.
     Here is the code.</p>
     </div>
+    <div style="width: 80%; margin: auto; text-align: center;">
     <pre><code>
     tof1_values = []
     def get_notification1(uuid, byte_array):
@@ -128,6 +129,7 @@ class RealRobot():
         return np.array(tof1_values)[np.newaxis].T,bearings
 
     </code></pre>
+    </div>
     <div style="width: 50%; margin: auto; text-align: center;">
     <p>Then, I put the robot in 4 marked poses and run the update step of the Bayes filter.
     Here are the plots of the localized poses</p>
