@@ -40,8 +40,118 @@
     <p>The main goal of this lab is to use Bayes filter to perform localization on my robot.
     I will use the optimized version of the localization code to complete the update step.</p>
     <h2>2. Prelab</h2>
-<a href="index.html">Back to the main page</a>
+    <p>First I read all instructions and set up the base code. After I test the bluetooth work well
+    I start to work on tasks.</p>
+    <h2>3. Tasks</h2>
+    <h3>3.1 Test localization in simulation</h3>
+    <p>I ran the notebook lab11_sim.ipynb and get the final plot with odom ground truth and belief
+    on it. Here is the plot</p>
+    <div class="center-video">
+           <img src="assets/img/lab11_0.png" alt="lab11_0">
     </div>
+    <h3>3.2 implement update step to localize the robot</h3>
+    <p>After going through lab11_real.ipynb, I implemented the perform_observation_loop
+    function of class RealRobot. I mainly used the code in lab 9 (orientation control).
+    The only thing I changed is the degree increment. In lab 9, the robot turned 25 degree each time
+    and in lab11 I let it to turn 20 degree for each time. I also created an empty list outside the
+    perform_observation_loop function. The TOF reading is added to the list for each time. After all results
+    are stored in the list, the function would return the required form of data which is mentioned in Tips.
+    Here is the code.</p>
+    </div>
+    <pre><code>
+    tof1_values = []
+    def get_notification1(uuid, byte_array):
+        global message
+        message = ble.bytearray_to_string(byte_array)
+        tof1_values.append(float(message)/1000)
+
+    </code></pre>
+    <pre><code>
+import re
+import threading
+class RealRobot():
+    """A class to interact with the real robot
+    """
+    def __init__(self, commander, ble):
+        # Load world config
+        self.world_config = os.path.join(str(pathlib.Path(os.getcwd()).parent), "config", "world.yaml")
+
+        self.config_params = load_config_params(self.world_config)
+
+        # Commander to commuincate with the Plotter process
+        # Used by the Localization module to plot odom and belief
+        self.cmdr = commander
+
+        # ArtemisBLEController to communicate with the Robot
+        self.ble = ble
+
+    def get_pose(self):
+        """Get robot pose based on odometry
+
+        Returns:
+            current_odom -- Odometry Pose (meters, meters, degrees)
+        """
+        raise NotImplementedError("get_pose is not implemented")
+
+
+
+
+    def perform_observation_loop(self,rot_vel=120):
+
+        '''
+        ble.stop_notify(ble.uuid['RX_STRING'])
+        result=[]
+        filename = 'lab11_test.txt'
+        ble.start_notify(ble.uuid['RX_STRING'], get_notification)
+        ble.send_command(CMD.GET_5s_IMU, "2|0.1|1|200|105")
+        time.sleep(90)
+
+        while True:
+            data = check_file_and_load_data(filename)
+            if data is not None:
+                print("data is ready:", data)
+                result=np.array(data)
+                break
+            else:
+                print("data is not ready")
+                time.sleep(10)  # 每10秒检查一次
+        '''
+
+        ble.start_notify(ble.uuid['RX_STRING'], get_notification1)
+        ble.send_command(CMD.GET_5s_IMU, "1|0.1|1|200|107")
+        time.sleep(90)
+        ble.stop_notify(ble.uuid['RX_STRING'])
+        print(tof1_values)
+
+        bearings=[]
+
+        return np.array(tof1_values)[np.newaxis].T,bearings
+
+    </code></pre>
+    <div style="width: 50%; margin: auto; text-align: center;">
+    <p>Then, I put the robot in 4 marked poses and run the update step of the Bayes filter.
+    Here are the plots of the localized poses</p>
+    <div class="center-video">
+           <img src="assets/img/lab11_1.png" alt="lab11_1">
+    </div>
+    <div class="center-video">
+           <img src="assets/img/lab11_2.png" alt="lab11_2">
+    </div>
+    <div class="center-video">
+           <img src="assets/img/lab11_3.png" alt="lab11_3">
+    </div>
+    <div class="center-video">
+           <img src="assets/img/lab11_4.png" alt="lab11_4">
+    </div>
+    <p>The ground truth of these marked poses are: (-3 ft ,-2 ft ,0 deg),
+    (0 ft,3 ft, 0 deg), (5 ft,-3 ft, 0 deg), (5 ft,3 ft, 0 deg).</p>
+    <p>Compared to the ground truth, it can be observed
+    that some poses are accurate while some are not. The reason is that
+    the robot can not turn 20 degree accurately for each time and the TOF sensor
+    has some noise. Therefore, it can only return an approximate pose.</p>
+    </div>
+<a href="index.html">Back to the main page</a>
+
 
 </body>
 </html>
