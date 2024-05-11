@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <title>lab11</title>
+     <style>
+        .center-video {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+
+    <title>Matrix Representation</title>
+    <style>
+        table, th, td {
+            border: 1px solid white;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        table {
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div style="width: 50%; margin: auto; text-align: center;">
+    <h1>Lab 12: Path Planning and Execution</h1>
+    <h2>1. Objective</h2>
+    <p>This lab is very open and I decide to achieve a local path planning which uses a turn-go-turn procedure from the odometry model.
+    It can avoid the obstacle using Bug 2 algorithm.</p>
+    <h2>2. Lab tasks</h2>
+    <p>In order to achieve this goal, I decide to implement a small task. It can first move towards the obstacle and then turn 90 degree when it is close. After that
+    the robot need to move around the obstacle using the TOF sensor on the left (by doing some fine tune). Finally, when the robot bypass the obstacle (that is when the
+    robot has turned 180 degree and close to the edge of the envrionment) it turns 90 degree again and go forward. The code is shown below:</p>
+    <pre>
+
+  switch(state){
+    case STATE_GO1:
+        input_PID=distance_12;
+
+        if(input_PID>600){
+          Serial.println("get to the 1st if function");
+
+          //ComputePID(Kp,Ki,Kd,Imax,minspeed);
+          change_speed(-50,-50);
+        }
+        else{
+          Serial.println("get to the 1st else function");
+          change_speed(0,0);
+          getnewIMU();
+          setPoint1_imu = fmod(input_PID_imu - 180, 360);
+          if (setPoint1_imu < -180) {
+              setPoint1_imu += 360;
+          }
+          Serial.print("setPoint1_imu: ");
+          Serial.println(setPoint1_imu);
+
+          Serial.print("input_PID_imu: ");
+          Serial.println(input_PID_imu);
+
+          while(abs(input_PID_imu-setPoint1_imu)>10){
+              getnewIMU();
+              PID_forimu(Kp_imu,Ki_imu,Kd_imu,Imax_imu,minspeed_imu,setPoint1_imu);
+              Serial.print("in the loop, yaw: ");
+              Serial.println(input_PID_imu);
+              change_speed(output_PID_imu,-output_PID_imu);
+          }
+          getnewIMU();
+          key_yaw = fmod(input_PID_imu - 180, 360);
+          if (key_yaw > 180) {
+              key_yaw -= 360;
+          }
+          //delay(1000);
+          // test version, should start to avoid obstacle
+          state = STATE_GO2;
+          //Serial.println("go to next state");
+        }
+        break;
+
+    case STATE_AVOID:
+
+        if(distance_22<150){
+
+          setPoint1_imu = fmod(input_PID_imu - 10, 360);
+          if (setPoint1_imu < -180) {
+              setPoint1_imu += 360;
+          }
+
+          while(abs(input_PID_imu-setPoint1_imu)>3){
+          getnewIMU();
+          PID_forimu(Kp_imu,Ki_imu,Kd_imu,Imax_imu,minspeed_imu,setPoint1_imu);
+
+          change_speed(output_PID_imu,-output_PID_imu);
+          }
+
+        }
+        else if(distance_22>350){
+          setPoint1_imu = fmod(input_PID_imu + 10, 360);
+          if (setPoint1_imu < -180) {
+              setPoint1_imu += 360;
+          }
+
+          while(abs(input_PID_imu-setPoint1_imu)>3){
+          getnewIMU();
+          PID_forimu(Kp_imu,Ki_imu,Kd_imu,Imax_imu,minspeed_imu,setPoint1_imu);
+
+          change_speed(output_PID_imu,-output_PID_imu);
+          }
+
+        }
+        else{
+          change_speed(-50,-50);
+        }
+
+        if(input_PID_imu<=key_yaw+10 && input_PID_imu>=key_yaw-10 && distance_12<300){
+          setPoint1_imu = fmod(input_PID_imu - 90, 360);
+          if (setPoint1_imu < -180) {
+              setPoint1_imu += 360;
+          }
+
+          while(abs(input_PID_imu-setPoint1_imu)>10){
+          getnewIMU();
+          PID_forimu(Kp_imu,Ki_imu,Kd_imu,Imax_imu,minspeed_imu,setPoint1_imu);
+
+          change_speed(output_PID_imu,-output_PID_imu);
+          }
+
+          state=STATE_GO2;
+
+
+        }
+        break;
+
+    case STATE_GO2:
+        Serial.println("get the new state");
+        move(-70,-70,2000,0);
+        stop_running=1;
+        break;
+
+    </pre>
+    <p>However, the IMU can not return accurate results in consecutive tasks. Therefore, I try to make it simple. The robot
+    will move in some determined steps based on 2 TOF sensors. The first and last steps are same while moving around the obstacle has
+    changed. Once, the TOF sensor deetct the distance is longer than the distance to the obstacle, it turns 90 degree. Here is the code.</p>
+    <pre>
+            if(!is_turn)
+            {
+              change_speed(70,70);
+            }
+            if(is_turn && current_time - turn_time > 400 && current_time - turn_time < 1000)
+            {
+              change_speed(0,0);
+
+
+            }
+            if(is_turn && current_time - turn_time > 1000 && current_time - turn_time <= 1300)
+            {
+
+              turnright(160);
+
+            }
+
+            /////next step///////
+            if(current_time - turn_time > 1900 && current_distance1>=600 && !flag1)
+            {
+              flag1 = true;
+              turnleft1 = true;
+            }
+            if(current_time - turn_time > 5000 && current_time - turn_time < 5300 && turnleft1)
+            {
+              turnleft(160);
+            }
+            if(turnleft1 && current_time - turn_time > 1300)
+            {
+
+              change_speed(0,0);
+
+            }
+            if(!turnleft1 && current_time - turn_time > 1300)
+            {
+
+              change_speed(70,70);
+
+            }
+
+            ////// next step///////
+
+            if(current_time - turn_time > 6200 && current_distance1>=500 && !flag2 )
+            {
+              flag2 = true;
+              turnleft2 = true;
+
+            }
+
+            if(!turnleft2 && current_time - turn_time > 5300)
+            {
+               change_speed(70,70);
+
+            }
+            if(turnleft2 && current_time - turn_time > 5300)
+            {
+               change_speed(0,0);
+
+            }
+            if(turnleft2 && current_time - turn_time > 9000 && current_time - turn_time < 9300)
+            {
+
+              turnleft(160);
+
+            }
+
+            /////next step///////
+            if(current_time - turn_time > 9800 && current_distance<=500 && !flag3 )
+            {
+              flag3 = true;
+              turnright2 = true;
+
+            }
+
+            if(!turnright2 && current_time - turn_time > 9300)
+            {
+              change_speed(70,70);
+
+            }
+            if(turnright2 && current_time - turn_time > 9300)
+            {
+              change_speed(0,0);
+
+
+            }
+            if(turnright2 && current_time - turn_time > 13000 && current_time - turn_time < 13300)
+            {
+
+              turnright((300/250)*80+70);
+            }
+            if(current_time - turn_time > 13300){
+              forward(70);
+            }
+
+    </pre>
+        <p>This program is more simple to implement and here is the video.</p>
+
+        <div class="center-video">
+        <iframe width="600" height="330" src="https://www.youtube.com/embed/vN-7gJvtsks" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+    </div>
+<a href="index.html">Back to the main page</a>
+
+
+</body>
+</html>
